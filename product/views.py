@@ -1,20 +1,95 @@
 from rest_framework import status
 from django.shortcuts import render
-from .models import Category, Product
-from .serializers import ProductSerializer, CategorySerializer
+from .models import Category, Product, MyUser, Cart, CartItem, Order
+from .serializers import ProductSerializer, CategorySerializer, CartSerializer, CartItemSerializer
 # from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+import json
 
-# @authentication_classes([JWTAuthentication])
-# @permission_classes([IsAuthenticated])
-# def myorders()
+@api_view(['POST'])
+def register(request):
+    try:
+        
+        body_unicode = request.body.decode('utf-8')
+        body=json.loads(body_unicode)
+        username=body.get('username', None)
+        email=body.get('email', None)
+        first_name=body.get('first_name', None)
+        last_name=body.get('last_name', None)
+        password=body.get('password', None)
+        if username is None or email is None or first_name is None or last_name is None or password is None:
+            return Response('missing required fields - username, email, first_name, last_name, password', status=status.HTTP_400_BAD_REQUEST)
+        existing_username=MyUser.objects.filter(username=username)
+
+        if len(existing_username) > 0:
+            return Response(f'username {username} already exist', status=status.HTTP_400_BAD_REQUEST)
+        
+        existing_email=MyUser.objects.filter(email=email)
+
+        if len(existing_email) > 0:
+            return Response(f'email {email} already exist', status=status.HTTP_400_BAD_REQUEST)
+        
+        user=MyUser(username=username,email=email,first_name=first_name,last_name=last_name)
+        user.set_password(password)
+        user.save()
+        return Response('user created', status=status.HTTP_201_CREATED)
+    except Exception as ex:
+        return Response(ex, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+
 @api_view(['GET', 'POST'])
-def cartitems(request):
-    # replace this with real cart items (you need a model, serializer, look at products for example)
-    return Response({'cart_items':[1,2,3]}) 
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def cart_items(request):
+    if request.method == 'GET':
+        cart_items=[]
+        try:
+            cart=Cart.objects.get(user=request.user,is_paid=False)
+            cart_items=CartItem.objects.filter(cart=cart)
+            cart_items_json = CartItemSerializer(cart_items, many=True).data
+            return Response(cart_items_json, status=status.HTTP_200_OK)  
+        except Cart.DoesNotExist:
+            return Response(cart_items, status=status.HTTP_200_OK)    
+        except Exception as ex:
+            return Response(ex, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
+    if request.method == 'POST':
+        try:
+           body_unicode = request.body.decode('utf-8')
+           body=json.loads(body_unicode)
+           product_id=body.get('product_id', None)
+           quantity=body.get('quantity', None) 
+
+           if product_id is None or quantity is None:
+               return Response('missing required fields - product_id, quantity', status=status.HTTP_400_BAD_REQUEST)
+           
+           try:
+               product_id=int(product_id)
+               quantity=int(quantity)
+               if product_id <= 0 or quantity <= 0:
+                   raise 'ex'
+           except:
+               return Response('input validation fields failed - product_id, quantity', status=status.HTTP_400_BAD_REQUEST)
+           product=Product.objects.get(id=product_id)
+           try:
+               cart=Cart.objects.get(user=request.user, is_paid=False)
+           except Cart.DoesNotExist:
+               cart=Cart(user=request.user)
+               cart.save()
+           try:
+               cart_item=CartItem.objects.get(cart=cart, product=product)
+               cart_item.quantity+=quantity
+           except CartItem.DoesNotExist:
+               cart_item=CartItem(product=product, quantity=quantity, cart=cart)
+           cart_item.save() 
+           return Response(status=status.HTTP_201_CREATED)     
+            
+        except Product.DoesNotExist:
+            return Response('product_id does not exist', status=status.HTTP_404_NOT_FOUND) 
+        except Exception as ex:
+            return Response(ex, status=status.HTTP_500_INTERNAL_SERVER_ERROR)     
+        
     
 @api_view(['GET', 'POST'])
 # @authentication_classes([JWTAuthentication])

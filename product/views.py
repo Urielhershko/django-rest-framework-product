@@ -88,7 +88,83 @@ def cart_items(request):
         except Product.DoesNotExist:
             return Response('product_id does not exist', status=status.HTTP_404_NOT_FOUND) 
         except Exception as ex:
-            return Response(ex, status=status.HTTP_500_INTERNAL_SERVER_ERROR)     
+            return Response(ex, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
+
+@api_view(['PATCH', 'DELETE'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def cart_item(request, id):
+    try:
+        cart_item=CartItem.objects.get(id=id)
+        if request.method == 'DELETE':
+            cart_item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        if request.method == 'PATCH':
+           body_unicode = request.body.decode('utf-8')
+           body=json.loads(body_unicode)
+           product_id=body.get('product_id', None)
+           quantity=body.get('quantity', None) 
+
+           if product_id is None or quantity is None:
+               return Response('missing required fields - product_id, quantity', status=status.HTTP_400_BAD_REQUEST)
+           
+           try:
+               product_id=int(product_id)
+               quantity=int(quantity)
+               if product_id <= 0 or quantity <= 0:
+                   raise 'ex'
+           
+               product=Product.objects.get(id=product_id)
+               cart=Cart.objects.get(user=request.user, is_paid=False)
+               cart_item=CartItem.objects.get(cart=cart,product=product)
+               cart_item.quantity=quantity
+               cart_item.save()
+               return Response(status=status.HTTP_204_NO_CONTENT)
+           except Product.DoesNotExist:
+               return Response(f'product_id {product_id} does not exist', status=status.HTTP_404_NOT_FOUND)
+           except Cart.DoesNotExist:
+               return Response('there are not any items on cart for a specific user', status=status.HTTP_404_NOT_FOUND)
+           except CartItem.DoesNotExist:
+               return Response('a specific item does not exist on cart', status=status.HTTP_404_NOT_FOUND)
+           except:
+               return Response('input validation fields failed - product_id, quantity', status=status.HTTP_400_BAD_REQUEST)
+    except CartItem.DoesNotExist:
+            return Response(f'cart item id {id} does not exist', status=status.HTTP_404_NOT_FOUND)    
+    except Exception as ex:
+            return Response(ex, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
+
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def order(request):
+    try:
+        if request.method == 'POST':
+            cart=Cart.objects.get(user=request.user, is_paid=False)
+            cart_items=CartItem.objects.filter(cart=cart)
+            if len(cart_items) == 0:
+                return Response('your cart was empty', status=status.HTTP_400_BAD_REQUEST)
+            amount=0
+            for item in cart_items:
+                if item.product.stock < item.quantity:
+                    raise ValueError('stock')
+                amount+=item.quantity*item.product.price
+            for item in cart_items:
+                product=Product.objects.get(id=item.product.id)
+                product.stock-=item.quantity
+                product.save()
+            cart.is_paid=True
+            cart.save()
+            order=Order(cart=cart,amount=amount) 
+            order.save()
+            return Response(status=status.HTTP_201_CREATED)
+    except ValueError as ex:
+        return Response(f'please checking quantities', status=status.HTTP_400_BAD_REQUEST)   
+    except Product.DoesNotExist:
+        return Response(f'product does not exist', status=status.HTTP_404_NOT_FOUND)       
+    except Cart.DoesNotExist:
+        return Response('there are not any items on cart for a specific user', status=status.HTTP_404_NOT_FOUND)        
+    except Exception as ex:
+        return Response(ex, status=status.HTTP_500_INTERNAL_SERVER_ERROR)            
         
     
 @api_view(['GET', 'POST'])

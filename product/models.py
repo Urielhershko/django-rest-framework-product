@@ -25,12 +25,18 @@ class Cart(models.Model):
 class CartItem(models.Model):
     product=models.OneToOneField(Product, on_delete=models.CASCADE)
     quantity=models.IntegerField(default=1)
-    cart=models.ForeignKey(Cart, on_delete=models.CASCADE)   
+    cart=models.ForeignKey(Cart, on_delete=models.CASCADE)  
+
+    def __str__(self):
+        return f'{self.product}-{self.quantity}-{self.cart}' 
 
 class Order(models.Model):
     creation_date = models.DateTimeField(auto_now_add=True) 
     cart=models.ForeignKey(Cart, on_delete=models.CASCADE) 
     amount=models.DecimalField(max_digits=16, decimal_places=2) 
+
+    def __str__(self):
+        return f'{self.creation_date}-{self.cart}-{self.amount}'
 
 class Category(models.Model):    
     name = models.CharField(max_length=100, null=False)

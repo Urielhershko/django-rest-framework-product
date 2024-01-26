@@ -68,6 +68,7 @@ SIMPLE_JWT = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -102,8 +103,12 @@ WSGI_APPLICATION = 'product_proj.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'products_db_xc1m',
+        'USER': 'products_db_xc1m_user',
+        'PASSWORD': 'lY3OT1qTXEVQoaAClkBNWMjp3jMnZE2U',
+        'HOST': 'dpg-cmpsjfqcn0vc73cpsum0-a.oregon-postgres.render.com',
+        'PORT': '5432'
     }
 }
 

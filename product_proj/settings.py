@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-csq+#ivj($6@7pb7x4u62+!2pv=nn@wyl!w4av^swkh6_&8afo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'products-react-project-1.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'products-django-project.onrender.com']
 
 
 # Application definition
@@ -51,7 +51,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
     "https://ranerlich7.github.io",
-    'https://products-react-project-1.onrender.com'
+    'https://products-django-project.onrender.com'
     
     
 ]

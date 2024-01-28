@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-csq+#ivj($6@7pb7x4u62+!2pv=nn@wyl!w4av^swkh6_&8afo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'products-django-project-1.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'https://products-react-project-1.onrender.com']
 
 
 # Application definition
